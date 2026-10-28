@@ -1,0 +1,209 @@
+<!-- ĐÂY LÀ FILE KHUNG (TEMPLATE) — KHÔNG CẦN SỬA KHI ĐỔI NỘI DUNG.
+     Nội dung nằm trong site.config.js. Cú pháp:
+       {{ duong.dan }}         → chèn giá trị trong config (đã escape HTML)
+       {{{ @tenRenderer }}}    → chèn HTML do hàm trong src/templates.js sinh ra
+     Lệnh build sẽ tự xóa comment này. -->
+<!doctype html>
+<html lang="{{ seo.lang }}" class="no-js">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="keywords" content="{{ seo.keywords }}">
+    <meta name="author" content="{{ brand.name }}">
+    <meta name="theme-color" content="{{ seo.themeColor }}">
+    <meta name="color-scheme" content="light">
+    <meta name="format-detection" content="telephone=no">
+
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="{{ seo.locale }}">
+    <meta property="og:site_name" content="{{ brand.name }}">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:image:alt" content="{{ seo.ogImageAlt }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    {{{ @seoHead }}}
+
+    <link rel="icon" href="public/icons/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="public/icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="public/icons/icon-512.png" sizes="512x512" type="image/png">
+    <link rel="apple-touch-icon" href="public/icons/apple-touch-icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script src="assets/js/main.js" defer></script>
+  </head>
+
+  <body>
+    <a href="#main" class="skip-link">{{ ui.skipLink }}</a>
+
+    <!-- ===== HEADER ===== -->
+    <header id="site-header" class="site-header">
+      <div class="container-x flex h-16 items-center justify-between gap-3">
+        <a href="#top" class="brand-mark min-w-0">
+          <span class="brand-dot" aria-hidden="true"></span>
+          <span class="truncate">{{ brand.name }}</span>
+        </a>
+        <nav aria-label="{{ ui.mainNav }}" class="hidden lg:block">{{{ @navLinks }}}</nav>
+        <div class="flex shrink-0 items-center gap-2">
+          {{{ @headerCta }}}
+          <button id="menu-toggle" type="button" class="btn-icon btn-icon-soft menu-toggle lg:hidden" aria-expanded="false" aria-controls="mobile-menu" aria-label="{{ ui.menuOpen }}" data-label-open="{{ ui.menuOpen }}" data-label-close="{{ ui.menuClose }}">
+            <svg class="icon-open size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+            <svg class="icon-close size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-menu" class="mobile-menu lg:hidden" hidden>
+      <div class="mobile-menu-panel">{{{ @mobileMenu }}}</div>
+    </div>
+
+    <main id="main">
+      <!-- ===== HERO ===== -->
+      <section id="top" class="hero" aria-labelledby="hero-title">
+        <div class="hero-art" aria-hidden="true"><span class="blob blob-a"></span><span class="blob blob-b"></span><span class="blob blob-c"></span></div>
+        {{{ @heroBackground }}}
+        <div class="container-x flex flex-1 flex-col gap-5 pb-6 pt-2 lg:gap-8 lg:pb-12 lg:pt-10">
+          <div class="order-2 lg:order-1 lg:mx-auto lg:max-w-4xl lg:text-center">
+            <p class="eyebrow">{{ hero.eyebrow }}</p>
+            <h1 id="hero-title" class="mt-3 text-display font-bold">
+              <span class="block">{{ hero.title }}</span>
+              <span class="text-gradient block">{{ hero.highlight }}</span>
+            </h1>
+            <p class="lead lg:mx-auto">{{ hero.subtitle }}</p>
+          </div>
+          <div class="hero-media order-1 lg:order-3">{{{ @heroMedia }}}</div>
+          <div id="hero-cta" class="order-3 mt-auto lg:order-2 lg:mt-0">{{{ @heroActions }}}</div>
+        </div>
+      </section>
+
+      <!-- ===== GIỚI THIỆU ===== -->
+      <section id="about" class="py-12 md:py-20 lg:py-24" aria-labelledby="about-title">
+        <div class="container-x">
+          <div class="about-grid">
+            <div class="about-photo reveal">{{{ @aboutMedia }}}</div>
+            <div class="about-card reveal" style="--i:1">
+              <p class="eyebrow">{{ about.eyebrow }}</p>
+              <h2 id="about-title" class="h-section">{{ about.title }}</h2>
+              <p class="lead">{{ about.summary }}</p>
+              {{{ @aboutHighlights }}}
+              {{{ @aboutBio }}}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== DỊCH VỤ ===== -->
+      <section id="services" class="section-soft py-12 md:py-20 lg:py-24" aria-labelledby="services-title">
+        <div class="container-x">
+          <div class="reveal">
+            <p class="eyebrow">{{ services.eyebrow }}</p>
+            <h2 id="services-title" class="h-section">{{ services.title }}</h2>
+            <p class="lead">{{ services.summary }}</p>
+          </div>
+          <div class="mt-8" data-collapse data-collapse-mode="mobile">{{{ @services }}}</div>
+        </div>
+      </section>
+
+      <!-- ===== VIDEO ===== -->
+      <section id="videos" class="section-dark py-12 md:py-20 lg:py-24" aria-labelledby="videos-title">
+        <div class="container-x">
+          <div class="reveal">
+            <p class="eyebrow">{{ videos.eyebrow }}</p>
+            <h2 id="videos-title" class="h-section">{{ videos.title }}</h2>
+            <p class="lead">{{ videos.summary }}</p>
+          </div>
+          <div class="mt-8">{{{ @showreel }}}</div>
+          <div data-collapse data-collapse-mode="mobile">{{{ @videoList }}}</div>
+        </div>
+      </section>
+
+      <!-- ===== GALLERY (mỗi danh mục một section con) ===== -->
+      <section id="gallery" class="py-12 md:py-20 lg:py-24" aria-labelledby="gallery-title">
+        <div class="container-x">
+          <div class="reveal">
+            <p class="eyebrow">{{ gallery.eyebrow }}</p>
+            <h2 id="gallery-title" class="h-section">{{ gallery.title }}</h2>
+            <p class="lead">{{ gallery.summary }}</p>
+            {{{ @galleryNav }}}
+          </div>
+          {{{ @gallery }}}
+        </div>
+      </section>
+
+      <!-- ===== KHÁCH HÀNG / ĐỐI TÁC ===== -->
+      <section id="clients" class="section-soft py-12 md:py-16" aria-labelledby="clients-title">
+        <div class="container-x text-center">
+          <p class="eyebrow">{{ clients.eyebrow }}</p>
+          <h2 id="clients-title" class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{{ clients.title }}</h2>
+        </div>
+        {{{ @clients }}}
+      </section>
+
+      <!-- ===== LIÊN HỆ ===== -->
+      <section id="contact" class="py-12 md:py-20 lg:py-24" aria-labelledby="contact-title">
+        <div class="container-x">
+          <div class="contact-card">
+            <div class="reveal">
+              <p class="eyebrow">{{ contact.eyebrow }}</p>
+              <h2 id="contact-title" class="h-section">{{ contact.title }}</h2>
+              <p class="lead">{{ contact.summary }}</p>
+              {{{ @contactChannels }}}
+            </div>
+            <div class="reveal" style="--i:1">{{{ @contactForm }}}</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="site-footer section-dark">
+      <div class="container-x">
+        <div class="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-start">
+          <div>
+            <a href="#top" class="brand-mark text-xl"><span class="brand-dot" aria-hidden="true"></span><span>{{ brand.name }}</span></a>
+            <p class="mt-3 max-w-sm text-night-soft">{{ footer.tagline }}</p>
+            <div class="mt-5">{{{ @footerSocials }}}</div>
+          </div>
+          <nav aria-label="Footer">{{{ @footerNav }}}</nav>
+        </div>
+        <div class="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-night-soft">{{{ @copyright }}}</p>
+          <a href="#top" class="footer-link inline-flex items-center gap-2">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+            <span>{{ footer.backToTop }}</span>
+          </a>
+        </div>
+      </div>
+    </footer>
+
+    {{{ @ctaBar }}}
+
+    <!-- ===== LIGHTBOX xem ảnh (vuốt trái/phải, vuốt xuống để đóng) ===== -->
+    <dialog id="lightbox" class="lightbox" aria-label="{{ ui.lightbox.label }}">
+      <div class="lb-top">
+        <p class="lb-count" data-lb-count></p>
+        <button type="button" class="lb-btn" data-lb-close aria-label="{{ ui.lightbox.close }}">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="lb-stage" data-lb-stage><img class="lb-img" data-lb-img alt=""></div>
+      <div class="lb-bottom">
+        <button type="button" class="lb-btn" data-lb-prev aria-label="{{ ui.lightbox.prev }}">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <p class="lb-caption" data-lb-caption></p>
+        <button type="button" class="lb-btn" data-lb-next aria-label="{{ ui.lightbox.next }}">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </dialog>
+  </body>
+</html>

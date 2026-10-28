@@ -1,0 +1,19 @@
+{
+  "name": "mc-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Website portfolio tĩnh cho MC — HTML + Tailwind CSS v4 + JavaScript thuần, ưu tiên điện thoại.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "preview": "node scripts/dev.mjs --no-watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}
