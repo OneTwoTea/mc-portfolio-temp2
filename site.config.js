@@ -37,7 +37,7 @@ export const SITE_CONFIG = {
       "MC dẫn chương trình đám cưới, hội nghị, gala và sự kiện doanh nghiệp. Dẫn dắt tự nhiên, đúng nhịp, chạm cảm xúc. Đặt lịch nhanh qua Zalo.",
     keywords: "MC sự kiện, MC đám cưới, MC hội nghị, MC gala dinner, MC doanh nghiệp",
     siteUrl: "[URL_WEBSITE]", // VD: https://ten-ban.github.io/mc-portfolio/ (có dấu / ở cuối)
-    ogImage: "public/images/og/og-image.png",
+    ogImage: "public/images/og/og-image.jpg",
     ogImageAlt: "[TEN_THUONG_HIEU] — MC sự kiện",
     locale: "vi_VN",
     lang: "vi",
@@ -216,12 +216,12 @@ export const SITE_CONFIG = {
     eyebrow: "Đã đồng hành",
     title: "Khách hàng & đối tác",
     items: [
-      { name: "[DOI_TAC_01]", logo: "public/images/clients/client-01.svg" },
-      { name: "[DOI_TAC_02]", logo: "public/images/clients/client-02.svg" },
-      { name: "[DOI_TAC_03]", logo: "public/images/clients/client-03.svg" },
-      { name: "[DOI_TAC_04]", logo: "public/images/clients/client-04.svg" },
-      { name: "[DOI_TAC_05]", logo: "public/images/clients/client-05.svg" },
-      { name: "[DOI_TAC_06]", logo: "public/images/clients/client-06.svg" },
+      { name: "Vietcombank", logo: "public/images/clients/client-01.png" },
+      { name: "MB Bank", logo: "public/images/clients/client-02.png" },
+      { name: "ACB", logo: "public/images/clients/client-03.png" },
+      { name: "VPBank", logo: "public/images/clients/client-04.png" },
+      { name: "VIB", logo: "public/images/clients/client-05.png" },
+      { name: "HSBC", logo: "public/images/clients/client-06.png" },
     ],
   },
 
