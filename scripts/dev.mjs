@@ -1,141 +1,215 @@
-/* ============================================================================
- *  DEV.MJS — server xem thử (node:http, không thư viện)
- *  npm run dev                 build (không nén) + tự build lại khi sửa file + tự tải lại trang
- *  npm run preview             chỉ phục vụ dist/ đang có (--no-watch)
- *  --base=/ten-repo/           giả lập GitHub Pages dạng project
- *  PORT=3000 npm run dev       đổi cổng (mặc định 5173)
- *  Server nghe trên 0.0.0.0 → mở bằng điện thoại cùng Wi-Fi qua địa chỉ LAN in ra.
- * ========================================================================== */
-import http from "node:http";
-import os from "node:os";
-import { existsSync, statSync, watch, createReadStream, readFileSync } from "node:fs";
-import { extname, join, normalize, sep } from "node:path";
-import { build, DIST, ROOT } from "./build.mjs";
+/**
+ * ═══════════════════════════════════════════════════════════
+ *  DEV.MJS — Server phát triển
+ *  Phục vụ dist/ + tự build lại khi thay đổi file
+ * ═══════════════════════════════════════════════════════════
+ */
 
+import { createServer } from "node:http";
+import { readFileSync, existsSync, watch, statSync } from "node:fs";
+import { join, extname, resolve, dirname, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { networkInterfaces } from "node:os";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const ROOT = resolve(__dirname, "..");
+
+// ─── FLAGS ──────────────────────────────────────────────
 const args = process.argv.slice(2);
-const watching = !args.includes("--no-watch");
+const noWatch = args.includes("--no-watch");
 const baseArg = args.find((a) => a.startsWith("--base="));
-const base = `/${(baseArg ? baseArg.slice(7) : "/").replace(/^\/+|\/+$/g, "")}/`.replace(/\/+/g, "/");
-const PORT = Number(process.env.PORT) || 5173;
+// VD: --base=/mc-portfolio/ → giả lập GitHub Pages dạng project (https://user.github.io/mc-portfolio/)
+const baseName = baseArg ? baseArg.split("=")[1].replace(/^\/+|\/+$/g, "") : "";
+const basePath = baseName ? "/" + baseName : "";
+const PORT = parseInt(process.env.PORT || "5173", 10);
 
+// ─── MIME TYPES ─────────────────────────────────────────
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".mjs": "text/javascript; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
-  ".webmanifest": "application/manifest+json",
-  ".txt": "text/plain; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
   ".avif": "image/avif",
-  ".gif": "image/gif",
   ".ico": "image/x-icon",
   ".mp4": "video/mp4",
   ".webm": "video/webm",
-  ".woff": "font/woff",
   ".woff2": "font/woff2",
+  ".woff": "font/woff",
+  ".ttf": "font/ttf",
+  ".gif": "image/gif",
 };
 
-const clients = new Set();
-const RELOAD_SNIPPET = `<script>new EventSource("${base}__reload").onmessage=()=>location.reload()</script>`;
+// ─── MÀU ────────────────────────────────────────────────
+const c = {
+  reset: "\x1b[0m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  cyan: "\x1b[36m",
+  dim: "\x1b[2m",
+  bold: "\x1b[1m",
+};
 
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url, "http://localhost");
-  let path = decodeURIComponent(url.pathname);
-
-  if (watching && path === `${base}__reload`) {
-    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
-    res.write(": ok\n\n");
-    clients.add(res);
-    req.on("close", () => clients.delete(res));
-    return;
-  }
-
-  if (!path.startsWith(base)) {
-    if (path === "/" || path === base.slice(0, -1)) {
-      res.writeHead(302, { Location: base });
-      return res.end();
-    }
-    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    return res.end(`Không tìm thấy. Trang nằm ở ${base}`);
-  }
-
-  path = path.slice(base.length);
-  let file = normalize(join(DIST, path));
-  if (!file.startsWith(DIST + sep) && file !== DIST) {
-    res.writeHead(403);
-    return res.end();
-  }
-  if (existsSync(file) && statSync(file).isDirectory()) file = join(file, "index.html");
-  if (!existsSync(file)) {
-    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    return res.end(`404 — không có file: ${path}`);
-  }
-
-  const type = MIME[extname(file).toLowerCase()] ?? "application/octet-stream";
-  const headers = { "Content-Type": type, "Cache-Control": "no-store" };
-  if (watching && type.startsWith("text/html")) {
-    const html = readFileSync(file, "utf8").replace("</body>", `${RELOAD_SNIPPET}</body>`);
-    res.writeHead(200, headers);
-    return res.end(html);
-  }
-  res.writeHead(200, headers);
-  createReadStream(file).pipe(res);
-});
-
+// ─── IP MẠNG LAN ────────────────────────────────────────
+/** Danh sách địa chỉ IPv4 nội bộ (VD 192.168.1.5) để mở thử trên điện thoại cùng Wi-Fi */
 function lanAddresses() {
-  return Object.values(os.networkInterfaces())
+  return Object.values(networkInterfaces())
     .flat()
-    .filter((n) => n && n.family === "IPv4" && !n.internal)
+    .filter((n) => n && (n.family === "IPv4" || n.family === 4) && !n.internal)
     .map((n) => n.address);
 }
 
-async function rebuild() {
+// ─── BUILD ──────────────────────────────────────────────
+async function runBuild() {
   try {
-    const ok = await build({ minify: false });
-    if (ok) process.exitCode = 0;
-    for (const res of clients) res.write("data: reload\n\n");
+    // Dynamic import + cache bust, build không minify cho dễ đọc
+    const mod = await import(`${pathToFileURL(join(ROOT, "scripts", "build.mjs")).href}?t=${Date.now()}`);
+    await mod.build({ minify: false });
+    process.exitCode = 0; // lỗi build không làm dừng dev server
   } catch (err) {
-    console.error(`\x1b[31m✖ ${err.message}\x1b[0m`);
+    console.log(`${c.red}✗ Build lỗi:${c.reset}`, err.message);
   }
 }
 
-if (watching) {
-  await rebuild();
-  let timer;
-  let running = false;
-  let queued = false;
-  const trigger = (file) => {
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      if (running) return void (queued = true);
-      running = true;
-      console.log(`\n\x1b[36m↻ Thay đổi: ${file ?? ""} — đang build lại…\x1b[0m`);
-      await rebuild();
-      running = false;
-      if (queued) {
-        queued = false;
-        trigger();
+// ─── SERVER ─────────────────────────────────────────────
+function startServer() {
+  const dist = join(ROOT, "dist");
+
+  const server = createServer((req, res) => {
+    let url = req.url || "/";
+
+    // Xử lý base path: /ten-repo/... → phục vụ dist/...
+    if (basePath) {
+      if (url === basePath || !url.startsWith(basePath + "/")) {
+        res.writeHead(302, { Location: basePath + "/" });
+        res.end();
+        return;
       }
-    }, 120);
-  };
-  for (const target of ["index.html", "site.config.js", "src", "public"]) {
-    const full = join(ROOT, target);
-    if (!existsSync(full)) continue;
-    const recursive = statSync(full).isDirectory();
-    watch(full, { recursive }, (_, name) => trigger(name ? join(target, String(name)) : target));
-  }
-} else if (!existsSync(join(DIST, "index.html"))) {
-  console.log("\x1b[33m⚠ Chưa có dist/. Chạy `npm run build` trước.\x1b[0m");
+      url = url.slice(basePath.length);
+    }
+
+    // Loại bỏ query string, giải mã ký tự (%20...)
+    try {
+      url = decodeURIComponent(url.split("?")[0]);
+    } catch {
+      res.writeHead(400);
+      res.end("Bad Request");
+      return;
+    }
+
+    // Mặc định index.html
+    if (url.endsWith("/")) url += "index.html";
+
+    const filePath = join(dist, url);
+
+    // Bảo mật: không cho truy cập ngoài dist
+    if (filePath !== dist && !filePath.startsWith(dist + sep)) {
+      res.writeHead(403);
+      res.end("Forbidden");
+      return;
+    }
+
+    if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end(existsSync(dist) ? "404 — Không tìm thấy" : "Chưa có dist/ — hãy chạy `npm run build` trước");
+      return;
+    }
+
+    const ext = extname(filePath).toLowerCase();
+    const mime = MIME[ext] || "application/octet-stream";
+
+    const content = readFileSync(filePath);
+    res.writeHead(200, {
+      "Content-Type": mime,
+      "Cache-Control": "no-cache",
+      "Access-Control-Allow-Origin": "*",
+    });
+    res.end(content);
+  });
+
+  server.on("error", (err) => {
+    console.log(`${c.red}✗ Không mở được cổng ${PORT}:${c.reset} ${err.message} (đổi cổng: PORT=3000 npm run dev)`);
+    process.exit(1);
+  });
+
+  // Lắng nghe 0.0.0.0 để điện thoại cùng Wi-Fi mở được qua IP LAN của máy tính
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log("");
+    console.log(`${c.cyan}${c.bold}  ╔═══════════════════════════════════════╗${c.reset}`);
+    console.log(`${c.cyan}${c.bold}  ║  🚀 Dev Server đang chạy             ║${c.reset}`);
+    console.log(`${c.cyan}${c.bold}  ╠═══════════════════════════════════════╣${c.reset}`);
+    console.log(`${c.cyan}  ║  ${c.reset}Local:  ${c.green}http://localhost:${PORT}${basePath}/${c.reset}`);
+    for (const ip of lanAddresses()) {
+      console.log(`${c.cyan}  ║  ${c.reset}Mạng LAN (điện thoại): ${c.green}http://${ip}:${PORT}${basePath}/${c.reset}`);
+    }
+    if (noWatch) {
+      console.log(`${c.cyan}  ║  ${c.reset}Chế độ: ${c.yellow}preview (không theo dõi)${c.reset}`);
+    } else {
+      console.log(`${c.cyan}  ║  ${c.reset}Chế độ: ${c.green}dev (tự build khi thay đổi)${c.reset}`);
+    }
+    console.log(`${c.cyan}${c.bold}  ╚═══════════════════════════════════════╝${c.reset}`);
+    console.log("");
+  });
 }
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n\x1b[1m${watching ? "Dev server" : "Preview"} đang chạy\x1b[0m`);
-  console.log(`  Máy này:    \x1b[36mhttp://localhost:${PORT}${base}\x1b[0m`);
-  for (const ip of lanAddresses()) console.log(`  Điện thoại: \x1b[36mhttp://${ip}:${PORT}${base}\x1b[0m  (cùng Wi-Fi)`);
-  console.log(`  ${watching ? "Đang theo dõi index.html, site.config.js, src/, public/. " : ""}Ctrl+C để dừng.\n`);
-});
+// ─── WATCH ──────────────────────────────────────────────
+function startWatch() {
+  const watchPaths = [
+    join(ROOT, "index.html"),
+    join(ROOT, "site.config.js"),
+    join(ROOT, "src"),
+    join(ROOT, "public"),
+  ];
+
+  let debounce = null;
+  let building = false;
+
+  function onChange(eventType, filename) {
+    if (building) return;
+    if (filename && /(^|[\\/])\.|~$/.test(filename)) return; // bỏ qua file tạm của editor
+    clearTimeout(debounce);
+    debounce = setTimeout(async () => {
+      building = true;
+      console.log(`${c.dim}[${new Date().toLocaleTimeString()}]${c.reset} ${c.yellow}Phát hiện thay đổi${filename ? `: ${filename}` : ""}${c.reset}`);
+      await runBuild();
+      console.log(`${c.dim}[${new Date().toLocaleTimeString()}]${c.reset} ${c.green}Build xong — tải lại trình duyệt${c.reset}`);
+      building = false;
+    }, 200);
+  }
+
+  for (const p of watchPaths) {
+    if (!existsSync(p)) continue;
+    try {
+      watch(p, { recursive: true }, onChange);
+    } catch {
+      // Một số hệ thống không hỗ trợ recursive watch
+      watch(p, onChange);
+    }
+  }
+
+  console.log(`${c.cyan}[watch]${c.reset} Đang theo dõi: index.html, site.config.js, src/, public/`);
+}
+
+// ─── MAIN ───────────────────────────────────────────────
+async function main() {
+  if (!noWatch) {
+    // Build trước khi khởi động
+    console.log(`${c.cyan}[dev]${c.reset} Build lần đầu...`);
+    await runBuild();
+  }
+
+  startServer();
+
+  if (!noWatch) {
+    startWatch();
+  }
+}
+
+main();
+

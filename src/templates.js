@@ -7,6 +7,8 @@
  *  - Thiết kế mobile-first: class không tiền tố là cho điện thoại.
  * ========================================================================== */
 
+import { existsSync } from "node:fs";
+
 /* ---------- 1. Tiện ích cơ bản ---------- */
 
 const ESC_MAP = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -472,13 +474,17 @@ export function createRenderers(config, ctx = {}) {
 
 const getPath = (obj, path) => path.split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj);
 
+/** Mặc định: kiểm tra file trong thư mục dự án (templates.js chỉ chạy lúc build, trên Node). */
+const fileExists = (p) => existsSync(new URL(`../${decodeURIComponent(p)}`, import.meta.url));
+
 /**
  * renderPage(template, config, { exists }) → { html, missing, missingAssets }
  * - missing: key/renderer có trong template nhưng không có trong config/templates.js
  * - missingAssets: file ảnh/video được khai báo nhưng chưa có trong public/
+ *   (ghi thêm vào comment cuối HTML để scripts/build.mjs quét được và cảnh báo)
  */
 export function renderPage(template, config, options = {}) {
-  const ctx = { exists: options.exists ?? (() => true), missingAssets: new Set() };
+  const ctx = { exists: options.exists ?? fileExists, missingAssets: new Set() };
   const renderers = createRenderers(config, ctx);
   const missing = new Set();
 
@@ -501,5 +507,7 @@ export function renderPage(template, config, options = {}) {
       return esc(value);
     });
 
-  return { html, missing: [...missing], missingAssets: [...ctx.missingAssets] };
+  const missingAssets = [...ctx.missingAssets];
+  const note = missingAssets.length ? `<!-- File chưa có: ${missingAssets.join(" ")} -->\n` : "";
+  return { html: html.replace("</body>", `${note}</body>`), missing: [...missing], missingAssets };
 }
